@@ -16,8 +16,7 @@ namespace FeatureToggling
         {
             services.Configure<OpenWeatherMapOptions>(configuration.GetSection("FeatureToggling:OpenWeatherMap"));
             services.Configure<AccuWeatherOptions>(configuration.GetSection("FeatureToggling:AccuWeather"));
-            //services.AddScoped<IWeatherService, OpenWeatherMapService>();
-            services.AddScoped<IWeatherService, AccuWeatherService>();
+            services.AddFeatureTogglingWeatherServices("FeatureToggling:WeatherSource");
         }
     }
 }

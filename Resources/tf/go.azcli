@@ -11,10 +11,12 @@ terraform plan \
 terraform apply tfplan
 
 owpe=`terraform output open_weather_map_endpoint`
+awe=`terraform output accu_weather_endpoint`
 appConfigName=`terraform output app_config_name`
 
 echo "Setting up Azure App Configuration..."
 az appconfig kv set --name $appConfigName --key FeatureToggling:OpenWeatherMap:Endpoint --value $owpe --yes > /dev/null
+az appconfig kv set --name $appConfigName --key FeatureToggling:AccuWeather:Endpoint --value $awe --yes > /dev/null
 az appconfig kv set --name $appConfigName --key FeatureToggling:WeatherSource --value OpenWeatherMap --yes > /dev/null
 
 echo "Ok, bye !"
