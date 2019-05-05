@@ -1,5 +1,7 @@
 set -e
 
+az extension add --name appconfig
+
 terraform init
 terraform plan \
     -var 'location=francecentral' \
@@ -7,3 +9,12 @@ terraform plan \
     -out tfplan
 
 terraform apply tfplan
+
+owpe=`terraform output open_weather_map_endpoint`
+appConfigName=`terraform output app_config_name`
+
+echo "Setting up Azure App Configuration..."
+az appconfig kv set --name $appConfigName --key FeatureToggling:OpenWeatherMap:Endpoint --value $owpe --yes > /dev/null
+az appconfig kv set --name $appConfigName --key FeatureToggling:WeatherSource --value OpenWeatherMap --yes > /dev/null
+
+echo "Ok, bye !"

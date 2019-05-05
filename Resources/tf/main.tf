@@ -34,6 +34,7 @@ resource "azurerm_key_vault_access_policy" "policy_user" {
     "get",
     "list",
     "set",
+    "delete",
   ]
 }
 
@@ -76,55 +77,33 @@ resource "azurerm_function_app" "function" {
   resource_group_name       = "${azurerm_resource_group.rg.name}"
   app_service_plan_id       = "${azurerm_app_service_plan.asp.id}"
   storage_connection_string = "${azurerm_storage_account.storage.primary_connection_string}"
+  version                   = "~2"
 
   identity {
     type = "SystemAssigned"
   }
 
   app_settings {
-    KeyVaultUri = "${azurerm_key_vault.safe.vault_uri}"
+    "AppConfigEndpoint"                     = "${lookup(azurerm_template_deployment.app_config.outputs, "endpoint")}"
+    "FeatureToggling:OpenWeatherMap:ApiKey" = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.open_weather_map_api_key.id})"
   }
-}
-
-resource "azurerm_key_vault_secret" "app_configuration_connection_string" {
-  name         = "AppConfigConnectionString"
-  value        = "${lookup(azurerm_template_deployment.app_config.outputs, "connectionString")}"
-  key_vault_id = "${azurerm_key_vault.safe.id}"
 }
 
 resource "azurerm_template_deployment" "app_config" {
   name                = "appconfigdeploy"
   resource_group_name = "${azurerm_resource_group.rg.name}"
 
-  template_body = <<DEPLOY
-  {
-      "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-      "contentVersion": "1.0.0.0",
-      "parameters": {
-          "name": {
-              "type": "string"
-          }
-      },
-      "resources": [          
-            {
-                "type": "Microsoft.AppConfiguration/configurationStores",
-                "name": "[parameters('name')]",
-                "apiVersion": "2019-02-01-preview",
-                "location": "westeurope"
-            }
-      ],
-      "outputs":{
-          "connectionString": {
-              "type": "string",
-              "value":"[listKeys(resourceId('Microsoft.AppConfiguration/configurationStores', parameters('name')), '2019-02-01-preview').value[0].connectionString]"
-          }
-      }
-  }
-DEPLOY
+  template_body = "${file("arm/app-config.json")}"
 
   parameters = {
     "name" = "${var.prefix}"
   }
 
   deployment_mode = "Incremental"
+}
+
+resource "azurerm_key_vault_secret" "open_weather_map_api_key" {
+  name         = "FeatureToggling--OpenWeatherMap--ApiKey"
+  value        = "${var.open_weather_map_api_key}"
+  key_vault_id = "${azurerm_key_vault.safe.id}"
 }

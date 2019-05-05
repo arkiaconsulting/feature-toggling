@@ -1,0 +1,27 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "type": "string"
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.AppConfiguration/configurationStores",
+            "name": "[parameters('name')]",
+            "apiVersion": "2019-02-01-preview",
+            "location": "westeurope"
+        }
+    ],
+    "outputs": {
+        "endpoint": {
+            "type": "string",
+            "value": "[reference(parameters('name'), '2019-02-01-preview').endpoint]"
+        },
+        "name": {
+            "type": "string",
+            "value": "[parameters('name')]"
+        }
+    }
+}
