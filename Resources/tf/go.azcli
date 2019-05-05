@@ -1,0 +1,9 @@
+set -e
+
+terraform init
+terraform plan \
+    -var 'location=francecentral' \
+    -var 'prefix=feature-toggling' \
+    -out tfplan
+
+terraform apply tfplan
