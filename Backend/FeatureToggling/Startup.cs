@@ -15,7 +15,9 @@ namespace FeatureToggling
         private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<OpenWeatherMapOptions>(configuration.GetSection("FeatureToggling:OpenWeatherMap"));
-            services.AddScoped<IWeatherService, OpenWeatherMapService>();
+            services.Configure<AccuWeatherOptions>(configuration.GetSection("FeatureToggling:AccuWeather"));
+            //services.AddScoped<IWeatherService, OpenWeatherMapService>();
+            services.AddScoped<IWeatherService, AccuWeatherService>();
         }
     }
 }

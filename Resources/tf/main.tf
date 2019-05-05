@@ -86,6 +86,7 @@ resource "azurerm_function_app" "function" {
   app_settings {
     "AppConfigEndpoint"                     = "${lookup(azurerm_template_deployment.app_config.outputs, "endpoint")}"
     "FeatureToggling:OpenWeatherMap:ApiKey" = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.open_weather_map_api_key.id})"
+    "FeatureToggling:AccuWeather:ApiKey"    = "@Microsoft.KeyVault(SecretUri=${azurerm_key_vault_secret.accu_weather_api_key.id})"
   }
 }
 
@@ -105,5 +106,11 @@ resource "azurerm_template_deployment" "app_config" {
 resource "azurerm_key_vault_secret" "open_weather_map_api_key" {
   name         = "FeatureToggling--OpenWeatherMap--ApiKey"
   value        = "${var.open_weather_map_api_key}"
+  key_vault_id = "${azurerm_key_vault.safe.id}"
+}
+
+resource "azurerm_key_vault_secret" "accu_weather_api_key" {
+  name         = "FeatureToggling--AccuWeather--ApiKey"
+  value        = "${var.accu_weather_api_key}"
   key_vault_id = "${azurerm_key_vault.safe.id}"
 }
