@@ -60,6 +60,13 @@ resource "azurerm_storage_account" "storage" {
   account_replication_type = "LRS"
 }
 
+resource "azurerm_storage_container" "web" {
+  name                  = "web"
+  resource_group_name   = "${azurerm_resource_group.rg.name}"
+  storage_account_name  = "${azurerm_storage_account.storage.name}"
+  container_access_type = "container"
+}
+
 resource "azurerm_app_service_plan" "asp" {
   name                = "${var.prefix}"
   location            = "${azurerm_resource_group.rg.location}"
@@ -113,4 +120,17 @@ resource "azurerm_key_vault_secret" "accu_weather_api_key" {
   name         = "FeatureToggling--AccuWeather--ApiKey"
   value        = "${var.accu_weather_api_key}"
   key_vault_id = "${azurerm_key_vault.safe.id}"
+}
+
+resource "azurerm_template_deployment" "cors" {
+  name                = "arm_cors"
+  resource_group_name = "${azurerm_resource_group.rg.name}"
+  deployment_mode     = "Incremental"
+
+  template_body = "${file("arm/cors.json")}"
+
+  parameters {
+    "name"          = "${azurerm_function_app.function.name}"
+    "allowedOrigin" = "${substr(azurerm_storage_account.storage.primary_blob_endpoint, 0, length(azurerm_storage_account.storage.primary_blob_endpoint) - 1)}"
+  }
 }
