@@ -1,5 +1,5 @@
 ﻿using FeatureToggling.Services;
-using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.AzureAppConfiguration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +12,11 @@ namespace FeatureToggling
 {
     public static class StartupExtensions
     {
-        public static void UseDependencyInjection(this IWebJobsBuilder builder, Action<IServiceCollection, IConfiguration> configureServices)
+        public static void UseDependencyInjection(
+            this IFunctionsHostBuilder builder,
+            Action<IConfigurationBuilder> configureConfigurationBuilder,
+            Action<IConfiguration> configurationGetter
+            )
         {
             var configurationBuilder = new ConfigurationBuilder();
             var existingConfigurationDescriptor = builder.Services.FirstOrDefault(descriptor => descriptor.ServiceType == typeof(IConfiguration));
@@ -22,21 +26,19 @@ namespace FeatureToggling
                 configurationBuilder.AddConfiguration(existingConfigurationDescriptor.ImplementationInstance as IConfigurationRoot);
             }
 
-            configurationBuilder.AddEnvironmentVariables();
-            configurationBuilder.AddFeatureTogglingAppConfiguration();
+            configureConfigurationBuilder(configurationBuilder);
 
-            var config = configurationBuilder.Build();
             if (existingConfigurationDescriptor?.ImplementationInstance is IConfigurationRoot)
             {
                 //replace the existing config with the new one
-                builder.Services.Replace(new ServiceDescriptor(typeof(IConfiguration), _ => config, existingConfigurationDescriptor.Lifetime));
+                builder.Services.Replace(new ServiceDescriptor(typeof(IConfiguration), _ => configurationBuilder.Build(), existingConfigurationDescriptor.Lifetime));
             }
             else
             {
-                builder.Services.AddScoped<IConfiguration>(sp => config);
+                builder.Services.AddScoped<IConfiguration>(sp => configurationBuilder.Build());
             }
-
-            configureServices(builder.Services, config);
+            
+            configurationGetter(configurationBuilder.Build());
         }
 
         public static IConfigurationBuilder AddFeatureTogglingAppConfiguration(this IConfigurationBuilder configurationBuilder)
@@ -46,7 +48,8 @@ namespace FeatureToggling
                 options
                     .ConnectWithManagedIdentity(Environment.GetEnvironmentVariable("AppConfigEndpoint"))
                     .Use(keyFilter: "FeatureToggling:*")
-                    .Watch("FeatureToggling:WeatherSource", TimeSpan.FromSeconds(5));
+                    .Watch("FeatureToggling:WeatherSource", TimeSpan.FromSeconds(5))
+                    .UseFeatureFlags();
             });
 
             return configurationBuilder;

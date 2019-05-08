@@ -1,22 +1,35 @@
 ﻿using FeatureToggling;
 using FeatureToggling.Services;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Hosting;
+using Microsoft.Azure.Functions.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-[assembly: WebJobsStartup(typeof(Startup))]
+[assembly: FunctionsStartup(typeof(Startup))]
 namespace FeatureToggling
 {
-    public class Startup : IWebJobsStartup
+    public class Startup : FunctionsStartup
     {
-        public void Configure(IWebJobsBuilder builder) => builder.UseDependencyInjection(ConfigureServices);
+        private IConfiguration Configuration { get; set; }
 
-        private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+        public override void Configure(IFunctionsHostBuilder builder)
         {
-            services.Configure<OpenWeatherMapOptions>(configuration.GetSection("FeatureToggling:OpenWeatherMap"));
-            services.Configure<AccuWeatherOptions>(configuration.GetSection("FeatureToggling:AccuWeather"));
+            builder.UseDependencyInjection(
+                ConfigureConfigurationBuilder,
+                config => Configuration = config);
+
+            ConfigureServices(builder.Services);
+        }
+
+        private void ConfigureServices(IServiceCollection services)
+        {
+            services.Configure<OpenWeatherMapOptions>(Configuration.GetSection("FeatureToggling:OpenWeatherMap"));
+            services.Configure<AccuWeatherOptions>(Configuration.GetSection("FeatureToggling:AccuWeather"));
             services.AddFeatureTogglingWeatherServices("FeatureToggling:WeatherSource");
+        }
+
+        private void ConfigureConfigurationBuilder(IConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.AddFeatureTogglingAppConfiguration();
         }
     }
 }
