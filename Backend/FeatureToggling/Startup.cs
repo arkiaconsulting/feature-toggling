@@ -9,21 +9,19 @@ namespace FeatureToggling
 {
     public class Startup : FunctionsStartup
     {
-        private IConfiguration Configuration { get; set; }
-
         public override void Configure(IFunctionsHostBuilder builder)
         {
-            builder.UseDependencyInjection(
-                ConfigureConfigurationBuilder,
-                config => Configuration = config);
+            builder.UseDependencyInjection(ConfigureConfigurationBuilder);
 
             ConfigureServices(builder.Services);
         }
 
         private void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<OpenWeatherMapOptions>(Configuration.GetSection("FeatureToggling:OpenWeatherMap"));
-            services.Configure<AccuWeatherOptions>(Configuration.GetSection("FeatureToggling:AccuWeather"));
+            services.AddOptions<OpenWeatherMapOptions>()
+                .Configure<IConfiguration>((opts, config) => config.Bind("FeatureToggling:OpenWeatherMap", opts));
+            services.AddOptions<AccuWeatherOptions>()
+                .Configure<IConfiguration>((opts, config) => config.Bind("FeatureToggling:AccuWeather", opts));
             services.AddFeatureTogglingWeatherServices("FeatureToggling:WeatherSource");
         }
 

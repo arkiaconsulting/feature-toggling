@@ -14,8 +14,7 @@ namespace FeatureToggling
     {
         public static void UseDependencyInjection(
             this IFunctionsHostBuilder builder,
-            Action<IConfigurationBuilder> configureConfigurationBuilder,
-            Action<IConfiguration> configurationGetter
+            Action<IConfigurationBuilder> configureConfigurationBuilder
             )
         {
             var configurationBuilder = new ConfigurationBuilder();
@@ -37,8 +36,6 @@ namespace FeatureToggling
             {
                 builder.Services.AddScoped<IConfiguration>(sp => configurationBuilder.Build());
             }
-            
-            configurationGetter(configurationBuilder.Build());
         }
 
         public static IConfigurationBuilder AddFeatureTogglingAppConfiguration(this IConfigurationBuilder configurationBuilder)
